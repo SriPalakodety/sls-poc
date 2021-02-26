@@ -1,0 +1,72 @@
+service: serverlesspoc
+
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+  profile: serverlessUserWithAdminAccess
+  apiGateway:
+    shouldStartNameWithService: true
+  # We can expose env variables like this
+  environment: 
+    dynamoTableName: ${self:custom.dynamoTableName}
+  # iamRoleStatements is for letting lambdas access dynamoDB table and what actions it can perform
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:*
+          Resource: '*'
+
+plugins:
+  - serverless-s3-sync
+  - serverless-webpack
+
+package:
+  individually: true
+
+custom:
+  # s3Sync is for syncing our folders with s3 bucket 
+  s3Sync:
+    - bucketName: ${self:custom.bucketName}
+      localDir: serverless-react-poc/build
+  # These are variable names that can be accessed in this file
+  bucketName: serverless-poc-bucket-02-26-2021
+  dynamoTableName: player-points
+
+functions:
+  getUser:
+    handler: lambdas/endpoints/getUser.handler
+    events:
+      - http: 
+          path: get-user/{id}
+          method: GET 
+          cors: true
+  getPlayerScore:
+    handler: lambdas/endpoints/getPlayerScore.handler
+    events:
+      - http: 
+          path: get-player-score/{id}
+          method: GET 
+          cors: true
+
+resources:
+  Resources:
+    UploadDemoBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucketName}
+    DynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.dynamoTableName}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
