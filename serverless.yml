@@ -25,6 +25,7 @@ plugins:
   - serverless-s3-sync
   - serverless-webpack
 
+# useful to build our packages indivudually so we can deploy only relevant changes
 package:
   individually: true
 
@@ -38,6 +39,7 @@ custom:
   dynamoTableName: player-points
 
 functions:
+  # getUser is the file name where our api exists
   getUser:
     handler: lambdas/endpoints/getUser.handler
     events:
@@ -52,13 +54,22 @@ functions:
           path: get-player-score/{id}
           method: GET 
           cors: true
+  createPlayerScore:
+    handler: lambdas/endpoints/createPlayerScore.handler
+    events:
+      - http: 
+          path: create-player-score/{id}
+          method: POST 
+          cors: true
 
 resources:
   Resources:
+    # UploadDemoBucket can be any generic name which we can understand.
     UploadDemoBucket:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:custom.bucketName}
+    # DynamoDBTable can be any generic name which we can understand.
     DynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
